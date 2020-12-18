@@ -13,9 +13,13 @@ using namespace std;
 #define RIGHT 77
 #define UP 72
 #define DOWN 80
-#define MAX_EDGE 100
+
+
+#define MAX_EDGE 20
 
 int cur_target_x, cur_target_y;
+
+char target_char = '#';
 
 void gotoxy(int x, int y) {
     COORD pos = { x, y };
@@ -32,21 +36,18 @@ public:
     int target_cnt, x, y;
     Target() {
         target_cnt = 0;
-        cur_target_x = x = rand() % 50;
-        cur_target_y = y = rand() % 50;
+        cur_target_x = x = rand() % (MAX_EDGE - 1) + 1;
+        cur_target_y = y = rand() % (MAX_EDGE - 1) + 1;
 
-
-
-        gotoxy(x, y);
-        printf("★");
+        gotoxy_draw(x, y, target_char);
     }
 
     void CreateNewTarget(const vector<pair<int, int>>& snake_body) {
         target_cnt++;
         bool retry = true;
         while (retry) {
-            cur_target_x = x = rand() % 50;
-            cur_target_y = y = rand() % 50;
+            cur_target_x = x = rand() % (MAX_EDGE - 1) + 1;
+            cur_target_y = y = rand() % (MAX_EDGE - 1) + 1;
 
             retry = false;
             for (auto p : snake_body) {
@@ -57,28 +58,72 @@ public:
             }
         }
 
-        gotoxy(x, y);
-        printf("★");
+        gotoxy_draw(x, y, target_char);
     }
 };
 
-class Snake {
-public:
-    vector<pair<int, int>> body;
-    Snake() { body.push_back(make_pair(1, 1)); }
 
-    void draw() {
-        for (auto i : body) {
-            gotoxy(i.first, i.second);
-            printf("@");
-        }
+enum MoveStatus
+{
+    none,
+    err,
+    meet_target,
+    meet_edge,
+    meet_snake
+};
+
+
+class Snake {
+
+private:
+
+    bool IsTarget(pair<int, int>& pos) {
+        return (pos.first == cur_target_x && pos.second == cur_target_y);
     }
 
-    bool move(int direction) {
-        if (body.size() == 0)
-            return false;
+    bool IsBody(pair<int, int>& pos) {
+        for (auto p : body) {
+            if (pos.first == p.first && pos.second == p.second) return true;
+        }
+        return false;
+    }
 
-        bool ret = false;
+    bool IsEdge(pair<int, int>& pos) {
+        return (pos.first == 0 || 
+                pos.first == MAX_EDGE ||
+                pos.second == 0 || 
+                pos.second == MAX_EDGE);
+    }
+
+public:
+
+    
+    int direction;
+    int clock;
+    vector<pair<int, int>> body;
+    Snake() { 
+        body.push_back(make_pair(1, 1)); 
+        direction = RIGHT;
+        gotoxy_draw(body[0].first, body[0].second, '@');
+        clock = 1000;
+    }
+
+    void speed_up()
+    {
+        // 최고 속도
+        if (clock == 100) return;
+
+        clock -= 100;
+    }
+
+    
+
+
+    MoveStatus move(int direction) {
+        if (body.size() == 0)
+            return err;
+
+        MoveStatus ret = none;
         int body_len = body.size();
 
         pair<int, int> top = body[0];
@@ -102,7 +147,7 @@ public:
         }
 
         // 음식을 먹으면
-        if (top.first == cur_target_x && top.second == cur_target_y) {
+        if (IsTarget(top)) {
             gotoxy_draw(top.first, top.second, ' ');
             
             body.push_back(body.back());
@@ -110,8 +155,14 @@ public:
                 body[i] = body[i - 1];
             }
 
-            ret = true;
+            ret = meet_target;
 
+        }
+        else if (IsBody(top)) {
+            return meet_snake;
+        }
+        else if (IsEdge(top)) {
+            return meet_edge;
         }
         else {
             // 마지막 몸 삭제
@@ -121,6 +172,7 @@ public:
             for (int i = body.size() - 1; i > 0; i--) {
                 body[i] = body[i - 1];
             }
+            ret = none;
         }
 
         body[0] = top;
@@ -130,35 +182,58 @@ public:
         return ret;
     }
 
-    void body_inc() {
-        
-    }
 };
 
+void draw_map()
+{
+    gotoxy(0, 0);
+    printf("=====================\n");
+    for(int i = 1; i< MAX_EDGE; i++) printf("=                   =\n");
+    printf("=====================\n");
+
+}
 
 int main() {
-    char input = 0;
+
+    draw_map();
+
+    char input = RIGHT;
     srand(time(NULL));
 
     Target target;
     Snake snake;
 
-
-    snake.draw();
-
+    
+    MoveStatus st = none;
     while (1) {
+        Sleep(snake.clock);
+
         if (_kbhit()) {
             input = _getch();
             if (input == -32) {
                 input = _getch();
-               
-                if (snake.move(input)) {
-                    target.CreateNewTarget(snake.body);
-                }
-
             }
         }
+        
+        st = snake.move(input);
+
+        if (st == meet_target) {
+            target.CreateNewTarget(snake.body);
+            snake.speed_up();
+        }
+        else if (st == meet_edge || st == meet_snake) {
+            gotoxy(6, 10);
+            printf("Game Over!\n");
+            break;
+        }
+        else if (st == none) {
+
+        }
+        else {
+
+        }
     }
+    system("pause");
 
     return 0;
 }
