@@ -15,7 +15,8 @@ using namespace std;
 #define DOWN 80
 
 
-#define MAX_EDGE 20
+#define MAX_WIDTH 30
+#define MAX_HEIGHT 10
 
 int cur_target_x, cur_target_y;
 
@@ -36,8 +37,8 @@ public:
     int target_cnt, x, y;
     Target() {
         target_cnt = 0;
-        cur_target_x = x = rand() % (MAX_EDGE - 1) + 1;
-        cur_target_y = y = rand() % (MAX_EDGE - 1) + 1;
+        cur_target_x = x = rand() % (MAX_WIDTH - 1) + 1;
+        cur_target_y = y = rand() % (MAX_HEIGHT - 1) + 1;
 
         gotoxy_draw(x, y, target_char);
     }
@@ -46,8 +47,8 @@ public:
         target_cnt++;
         bool retry = true;
         while (retry) {
-            cur_target_x = x = rand() % (MAX_EDGE - 1) + 1;
-            cur_target_y = y = rand() % (MAX_EDGE - 1) + 1;
+            cur_target_x = x = rand() % (MAX_WIDTH - 1) + 1;
+            cur_target_y = y = rand() % (MAX_HEIGHT - 1) + 1;
 
             retry = false;
             for (auto p : snake_body) {
@@ -90,9 +91,9 @@ private:
 
     bool IsEdge(pair<int, int>& pos) {
         return (pos.first == 0 || 
-                pos.first == MAX_EDGE ||
+                pos.first == MAX_WIDTH ||
                 pos.second == 0 || 
-                pos.second == MAX_EDGE);
+                pos.second == MAX_HEIGHT);
     }
 
 public:
@@ -133,7 +134,7 @@ public:
                 top.first--;
             break;
         case RIGHT:
-            if (top.first < MAX_EDGE)
+            if (top.first < MAX_WIDTH)
                 top.first++;
             break;
         case UP:
@@ -141,7 +142,7 @@ public:
                 top.second--;
             break;
         case DOWN:
-            if (top.second < MAX_EDGE)
+            if (top.second < MAX_HEIGHT)
                 top.second++;
             break;
         }
@@ -186,10 +187,26 @@ public:
 
 void draw_map()
 {
+    char upper_edge[256] = "";
+    char side_edge[256] = "";
+    
+    for (int i = 0; i < MAX_WIDTH + 1; i++)
+    {
+        upper_edge[i] = '=';
+    }
+
+
+    for (int i = 0; i < MAX_WIDTH + 1; i++)
+    {
+        side_edge[i] = ' ';
+    }
+    side_edge[0] = '=';
+    side_edge[MAX_WIDTH] = '=';
+
     gotoxy(0, 0);
-    printf("=====================\n");
-    for(int i = 1; i< MAX_EDGE; i++) printf("=                   =\n");
-    printf("=====================\n");
+    printf("%s\n", upper_edge);
+    for(int i = 0; i < MAX_HEIGHT; i++) printf("%s\n", side_edge);
+    printf("%s\n", upper_edge);
 
 }
 
