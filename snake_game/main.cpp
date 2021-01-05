@@ -7,32 +7,19 @@
 #include <queue>
 #include <vector>
 
+#include "GameDefine.h"
+#include "Funcs.h"
+#include "Env.h"
+
+
 using namespace std;
-
-#define LEFT 75
-#define RIGHT 77
-#define UP 72
-#define DOWN 80
-
-
-#define MAX_WIDTH 30
-#define MAX_HEIGHT 10
 
 int cur_target_x, cur_target_y;
 
-char target_char = '#';
-
-void gotoxy(int x, int y) {
-    COORD pos = { x, y };
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
-}
-
-void gotoxy_draw(int x, int y, char c) {
-    gotoxy(x, y);
-    printf("%c", c);
-}
-
+/*
 class Target {
+private:
+    const char target_char = '#';
 public:
     int target_cnt, x, y;
     Target() {
@@ -40,6 +27,13 @@ public:
         cur_target_x = x = rand() % (MAX_WIDTH - 1) + 1;
         cur_target_y = y = rand() % (MAX_HEIGHT - 1) + 1;
 
+        gotoxy_draw(x, y, target_char);
+    }
+
+    Target(int _x, int _y) {
+        target_cnt = 0;
+        x = _x;
+        y = _y;
         gotoxy_draw(x, y, target_char);
     }
 
@@ -63,150 +57,13 @@ public:
     }
 };
 
-
-enum MoveStatus
-{
-    none,
-    err,
-    meet_target,
-    meet_edge,
-    meet_snake
-};
+*/
 
 
-class Snake {
-
-private:
-
-    bool IsTarget(pair<int, int>& pos) {
-        return (pos.first == cur_target_x && pos.second == cur_target_y);
-    }
-
-    bool IsBody(pair<int, int>& pos) {
-        for (auto p : body) {
-            if (pos.first == p.first && pos.second == p.second) return true;
-        }
-        return false;
-    }
-
-    bool IsEdge(pair<int, int>& pos) {
-        return (pos.first == 0 || 
-                pos.first == MAX_WIDTH ||
-                pos.second == 0 || 
-                pos.second == MAX_HEIGHT);
-    }
-
-public:
-
-    
-    int direction;
-    int clock;
-    vector<pair<int, int>> body;
-    Snake() { 
-        body.push_back(make_pair(1, 1)); 
-        direction = RIGHT;
-        gotoxy_draw(body[0].first, body[0].second, '@');
-        clock = 1000;
-    }
-
-    void speed_up()
-    {
-        // 최고 속도
-        if (clock == 100) return;
-
-        clock -= 100;
-    }
-
-    
 
 
-    MoveStatus move(int direction) {
-        if (body.size() == 0)
-            return err;
 
-        MoveStatus ret = none;
-        int body_len = body.size();
-
-        pair<int, int> top = body[0];
-        switch (direction) {
-        case LEFT:
-            if (top.first > 0)
-                top.first--;
-            break;
-        case RIGHT:
-            if (top.first < MAX_WIDTH)
-                top.first++;
-            break;
-        case UP:
-            if (top.second > 0)
-                top.second--;
-            break;
-        case DOWN:
-            if (top.second < MAX_HEIGHT)
-                top.second++;
-            break;
-        }
-
-        // 음식을 먹으면
-        if (IsTarget(top)) {
-            gotoxy_draw(top.first, top.second, ' ');
-            
-            body.push_back(body.back());
-            for (int i = body.size() - 1; i > 0 ; i--) {
-                body[i] = body[i - 1];
-            }
-
-            ret = meet_target;
-
-        }
-        else if (IsBody(top)) {
-            return meet_snake;
-        }
-        else if (IsEdge(top)) {
-            return meet_edge;
-        }
-        else {
-            // 마지막 몸 삭제
-            gotoxy_draw(body[body_len - 1].first, body[body_len - 1].second, ' ');
-            
-
-            for (int i = body.size() - 1; i > 0; i--) {
-                body[i] = body[i - 1];
-            }
-            ret = none;
-        }
-
-        body[0] = top;
-        gotoxy_draw(body[0].first, body[0].second, '@');
-        
-
-        return ret;
-    }
-
-};
-
-void draw_map()
-{
-    char upper_edge[256] = "";
-    char side_edge[256] = "";
-    
-    for (int i = 0; i < MAX_WIDTH + 1; i++)
-    {
-        upper_edge[i] = '=';
-    }
-
-
-    for (int i = 0; i < MAX_WIDTH + 1; i++)
-    {
-        side_edge[i] = ' ';
-    }
-    side_edge[0] = '=';
-    side_edge[MAX_WIDTH] = '=';
-
-    gotoxy(0, 0);
-    printf("%s\n", upper_edge);
-    for(int i = 0; i < MAX_HEIGHT; i++) printf("%s\n", side_edge);
-    printf("%s\n", upper_edge);
+void Init() {
 
 }
 
@@ -217,13 +74,13 @@ int main() {
     char input = RIGHT;
     srand(time(NULL));
 
-    Target target;
-    Snake snake;
+    Env game;
 
-    
+    game.Init();
+
     MoveStatus st = none;
     while (1) {
-        Sleep(snake.clock);
+        Sleep(game.GetClock());
 
         if (_kbhit()) {
             input = _getch();
@@ -232,11 +89,11 @@ int main() {
             }
         }
         
-        st = snake.move(input);
+        st = game.Move(input);
 
         if (st == meet_target) {
-            target.CreateNewTarget(snake.body);
-            snake.speed_up();
+            game.CreateNewTarget();
+            game.SpeedUp();
         }
         else if (st == meet_edge || st == meet_snake) {
             gotoxy(6, 10);
